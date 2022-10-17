@@ -1,0 +1,104 @@
+From 8efd62bd8aec2a45ae0e3505d2bb1d3b05d1be50 Mon Sep 17 00:00:00 2001
+From: Jose Quaresma <jose.quaresma@foundries.io>
+Date: Mon, 17 Oct 2022 08:56:59 +0000
+Subject: [PATCH] Binutils 2.39 now warns when a segment has RXW
+ permissions[1].
+
+As we use the --fatal-warnings the build is falling:
+
+| aarch64-lmp-linux-ld.bfd: warning: /oe/build/tmp-lmp/work/am62xx_evm-lmp-linux/optee-os-tadevkit/3.17.0+gitAUTOINC+15a746d28d-r0/build/core/all_objs.o has a LOAD segment with RWX permissions
+| aarch64-lmp-linux-ld.bfd: warning: /oe/build/tmp-lmp/work/am62xx_evm-lmp-linux/optee-os-tadevkit/3.17.0+gitAUTOINC+15a746d28d-r0/build/core/unpaged.o has a LOAD segment with RWX permissions
+| aarch64-lmp-linux-ld.bfd: warning: /oe/build/tmp-lmp/work/am62xx_evm-lmp-linux/optee-os-tadevkit/3.17.0+gitAUTOINC+15a746d28d-r0/build/core/init.o has a LOAD segment with RWX permissions
+| aarch64-lmp-linux-ld.bfd: warning: /oe/build/tmp-lmp/work/am62xx_evm-lmp-linux/optee-os-tadevkit/3.17.0+gitAUTOINC+15a746d28d-r0/build/core/tee.elf has a LOAD segment with RWX permissions
+
+So as temporary solution, remove --fatal-warnings from the source code:
+
+| sed -e "s:--fatal-warnings::g" -i core/arch/arm/kernel/link.mk mk/lib.mk ldelf/link.mk ta/arch/arm/link.mk ta/arch/arm/link_shlib.mk
+
+[1] https://sourceware.org/git/?p=binutils-gdb.git;a=commit;h=ba951afb99912da01a6e8434126b8fac7aa75107
+
+Signed-off-by: Jose Quaresma <jose.quaresma@foundries.io>
+---
+ core/arch/arm/kernel/link.mk | 6 +++---
+ ldelf/link.mk                | 2 +-
+ mk/lib.mk                    | 2 +-
+ ta/arch/arm/link.mk          | 2 +-
+ ta/arch/arm/link_shlib.mk    | 2 +-
+ 5 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/core/arch/arm/kernel/link.mk b/core/arch/arm/kernel/link.mk
+index 610b22cc7..1cad09f3e 100644
+--- a/core/arch/arm/kernel/link.mk
++++ b/core/arch/arm/kernel/link.mk
+@@ -23,13 +23,13 @@ ifeq ($(CFG_CORE_BTI),y)
+ # force-bti tells the linker to warn if some object files lack the .note.gnu.property
+ # section with the BTI flag, and to turn on the BTI flag in the output anyway. The
+ # resulting executable would likely fail at runtime so we use this flag along
+-# with the --fatal-warnings below to check and prevent this situation (with useful
++# with the  below to check and prevent this situation (with useful
+ # diagnostics).
+-link-ldflags += $(call ld-option,-z force-bti) --fatal-warnings
++link-ldflags += $(call ld-option,-z force-bti) 
+ endif
+ link-ldflags += -T $(link-script-pp) -Map=$(link-out-dir)/tee.map
+ link-ldflags += --sort-section=alignment
+-link-ldflags += --fatal-warnings
++link-ldflags += 
+ link-ldflags += --gc-sections
+ 
+ link-ldadd  = $(LDADD)
+diff --git a/ldelf/link.mk b/ldelf/link.mk
+index 64c8212a0..dee806428 100644
+--- a/ldelf/link.mk
++++ b/ldelf/link.mk
+@@ -18,7 +18,7 @@ link-ldflags += -Map=$(link-out-dir$(sm))/ldelf.map
+ link-ldflags += --sort-section=alignment
+ link-ldflags += -z max-page-size=4096 # OP-TEE always uses 4K alignment
+ ifeq ($(CFG_CORE_BTI),y)
+-link-ldflags += $(call ld-option,-z force-bti) --fatal-warnings
++link-ldflags += $(call ld-option,-z force-bti) 
+ endif
+ link-ldflags += $(link-ldflags$(sm))
+ 
+diff --git a/mk/lib.mk b/mk/lib.mk
+index 30f2040a3..82ede2954 100644
+--- a/mk/lib.mk
++++ b/mk/lib.mk
+@@ -60,7 +60,7 @@ $(lib-libfile): $(objs)
+ endif
+ ifeq ($(CFG_ULIBS_SHARED),y)
+ ifeq ($(sm)-$(CFG_TA_BTI),ta_arm64-y)
+-lib-ldflags$(libuuid) += $$(call ld-option,-z force-bti) --fatal-warnings
++lib-ldflags$(libuuid) += $$(call ld-option,-z force-bti) 
+ endif
+ $(lib-shlibfile): $(objs) $(lib-needed-so-files)
+ 	@$(cmd-echo-silent) '  LD      $$@'
+diff --git a/ta/arch/arm/link.mk b/ta/arch/arm/link.mk
+index ec5c8db67..f02f7ad5b 100644
+--- a/ta/arch/arm/link.mk
++++ b/ta/arch/arm/link.mk
+@@ -32,7 +32,7 @@ link-ldflags += -Map=$(link-out-dir$(sm))/$(user-ta-uuid).map
+ link-ldflags += --sort-section=alignment
+ link-ldflags += -z max-page-size=4096 # OP-TEE always uses 4K alignment
+ ifeq ($(sm)-$(CFG_TA_BTI),ta_arm64-y)
+-link-ldflags += $(call ld-option,-z force-bti) --fatal-warnings
++link-ldflags += $(call ld-option,-z force-bti) 
+ endif
+ link-ldflags += --as-needed # Do not add dependency on unused shlib
+ link-ldflags += $(link-ldflags$(sm))
+diff --git a/ta/arch/arm/link_shlib.mk b/ta/arch/arm/link_shlib.mk
+index 0cdf3bfa6..3b696b6a9 100644
+--- a/ta/arch/arm/link_shlib.mk
++++ b/ta/arch/arm/link_shlib.mk
+@@ -21,7 +21,7 @@ shlink-ldflags  = $(LDFLAGS)
+ shlink-ldflags += -shared -z max-page-size=4096
+ shlink-ldflags += $(call ld-option,-z separate-loadable-segments)
+ ifeq ($(sm)-$(CFG_TA_BTI),ta_arm64-y)
+-shlink-ldflags += $(call ld-option,-z force-bti) --fatal-warnings
++shlink-ldflags += $(call ld-option,-z force-bti) 
+ endif
+ shlink-ldflags += --as-needed # Do not add dependency on unused shlib
+ 
+-- 
+2.34.1
+
