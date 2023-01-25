@@ -20,7 +20,7 @@ index 53a0bef..d788579 100644
      $(1)_compiler_preferred_target := i386-linux-gnu
     endif
 -   ifneq ($$(filter aarch64-poky-linux,$$($(1)_compiler_preferred_target)),)
-+   ifneq ($$(filter aarch64-oe-linux aarch64-poky-linux,$$($(1)_compiler_preferred_target)),)
++   ifneq ($$(filter aarch64-lmp-linux aarch64-poky-linux,$$($(1)_compiler_preferred_target)),)
      $(1)_compiler_preferred_target := aarch64-linux-gnu
     endif
     ifneq ($$(filter armv7a-cros-linux-gnueabi armv7l-tizen-linux-gnueabi,$$($(1)_compiler_preferred_target)),)
