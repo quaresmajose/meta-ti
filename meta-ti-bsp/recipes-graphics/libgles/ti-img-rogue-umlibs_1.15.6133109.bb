@@ -10,11 +10,15 @@ REQUIRED_MACHINE_FEATURES = "gpu"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 COMPATIBLE_MACHINE = "j721e|j721s2|j784s4|am62xx"
 
-PR = "r2"
+PR = "r3"
 
 BRANCH = "linuxws/dunfell/k5.10/${PV}_unified_fw_pagesize"
 
-SRC_URI = "git://git.ti.com/git/graphics/ti-img-rogue-umlibs.git;protocol=https;branch=${BRANCH}"
+SRC_URI = " \
+	git://git.ti.com/git/graphics/ti-img-rogue-umlibs.git;protocol=https;branch=${BRANCH} \
+	file://0001-Makefile-handle-firmware-with-usrmerge.patch \
+"
+
 SRCREV = "5977e82b96028f783d39c7219f016c1faf8dc5f5"
 
 TARGET_PRODUCT:j721e = "j721e_linux"
@@ -52,7 +56,8 @@ RRECOMMENDS:${PN} += "ti-img-rogue-driver"
 S = "${WORKDIR}/git"
 
 do_install () {
-    oe_runmake install DESTDIR=${D} TARGET_PRODUCT=${TARGET_PRODUCT} BUILD=${PVR_BUILD} WINDOW_SYSTEM=${PVR_WS}
+    oe_runmake install DESTDIR=${D} FWDIR=${nonarch_base_libdir} \
+	TARGET_PRODUCT=${TARGET_PRODUCT} BUILD=${PVR_BUILD} WINDOW_SYSTEM=${PVR_WS}
     chown -R root:root ${D}
 }
 
