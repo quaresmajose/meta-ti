@@ -4,15 +4,8 @@
 
 BRANCH = "powervr/kirkstone/22.0"
 
-SRC_URI = " \
-    git://gitlab.freedesktop.org/StaticRocket/mesa.git;protocol=https;branch=${BRANCH} \
-    file://0001-meson.build-check-for-all-linux-host_os-combinations.patch \
-    file://0002-meson.build-make-TLS-ELF-optional.patch \
-    file://0001-meson-misdetects-64bit-atomics-on-mips-clang.patch \
-    file://0001-futex.h-Define-__NR_futex-if-it-does-not-exist.patch \
-    file://0001-util-format-Check-for-NEON-before-using-it.patch \
-    file://0001-Revert-egl-wayland-deprecate-drm_handle_format-and-d.patch \
-"
+SRC_URI += "git://gitlab.freedesktop.org/StaticRocket/mesa.git;protocol=https;branch=${BRANCH}"
+SRC_URI:remove = "https://mesa.freedesktop.org/archive/mesa-${PV}.tar.xz"
 
 S = "${WORKDIR}/git"
 
